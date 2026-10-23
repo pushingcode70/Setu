@@ -1,28 +1,29 @@
 import React from "react";
 
-// Put your image in the /public folder and update the filename here.
-const HERO_IMAGE = "/salman-wanted-dialogue.webp";
-
 const steps = [
   {
     title: "Client deposits",
-    text: "The client locks the agreed amount in the smart contract.",
+    text: "The client locks the agreed amount in a smart contract before any work begins. The terms, deadline and payout address are written on-chain, so everyone can see exactly what was promised.",
     icon: "wallet",
+    color: "purple",
   },
   {
     title: "Funds held in escrow",
-    text: "Neither side can touch the money while work is in progress.",
+    text: "While the project is in progress, the money sits inside the contract. Neither the client nor the freelancer can withdraw it early, and no middleman ever holds it.",
     icon: "lock",
+    color: "cyan",
   },
   {
     title: "Work delivered",
-    text: "The freelancer submits the finished work for review.",
+    text: "The freelancer submits the finished work for review. The client gets a clear window to check it against the agreed scope and request changes if needed.",
     icon: "check",
+    color: "white",
   },
   {
     title: "Payment released",
-    text: "On approval, the contract sends the funds to the freelancer.",
+    text: "Once the client approves, the contract sends the funds to the freelancer automatically. No invoices to chase and no waiting on a bank.",
     icon: "send",
+    color: "yellow",
   },
 ];
 
@@ -44,11 +45,11 @@ function Icon({ name }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="22"
-      height="22"
+      width="26"
+      height="26"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -65,131 +66,229 @@ export default function Home() {
 
       <section className="hero">
         <div className="hero-text">
+          <div className="tags">
+            <span className="tag tag-purple">Trustless escrow</span>
+            <span className="tag tag-yellow">Powered by smart contracts</span>
+          </div>
+
           <h1>
-            A Trustless System.
+            A trustless system.
             <br />
-            Commit to Your Commitments.
+            Commit to your commitments.
           </h1>
 
-          <div className="flow" aria-label="How payment moves from client to freelancer">
-            <h2>How payment moves from client to freelancer</h2>
-            <ol>
-              {steps.map((s, i) => (
-                <li key={s.title}>
-                  <span className="badge">
-                    <Icon name={s.icon} />
-                  </span>
-                  <div>
-                    <h3>
-                      {i + 1}. {s.title}
-                    </h3>
-                    <p>{s.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
+          <p className="lede">
+            Hiring someone you have never met, or working for a client you have
+            never worked with, always carries risk. Our escrow platform removes
+            that risk: the money is locked in a smart contract that follows
+            rules both sides agreed to up front, and it only moves when those
+            rules are met.
+          </p>
         </div>
 
-        <div className="hero-image">
-          <img src={HERO_IMAGE} alt="Client and freelancer committing to an agreement" />
-        </div>
+        <aside className="vault" aria-label="Example escrow contract">
+          <p className="vault-kicker">Contract status</p>
+          <p className="vault-amount">$1,200</p>
+          <p className="vault-note">Locked in escrow until the client approves</p>
+          <ul>
+            <li>
+              <span>Client</span>
+              <strong>Deposited</strong>
+            </li>
+            <li>
+              <span>Freelancer</span>
+              <strong>Working</strong>
+            </li>
+            <li>
+              <span>Release</span>
+              <strong>On approval</strong>
+            </li>
+          </ul>
+        </aside>
+      </section>
+
+      <section className="flow" aria-labelledby="flow-title">
+        <h2 id="flow-title">How payment moves from client to freelancer</h2>
+        <p className="flow-sub">
+          Four steps, enforced by code instead of promises. Here is what
+          happens from the first deposit to the final payout.
+        </p>
+
+        <ol>
+          {steps.map((s, i) => (
+            <li key={s.title} className={`card card-${s.color}`}>
+              <div className="card-top">
+                <span className="badge">
+                  <Icon name={s.icon} />
+                </span>
+                <span className="step-num">Step {i + 1}</span>
+              </div>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+            </li>
+          ))}
+        </ol>
       </section>
     </main>
   );
 }
 
 const css = `
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap");
+
 .home {
-  --text: #f4f4f4;
-  --muted: #9b9b9b;
-  --bg: #000000;
-  --surface: #141414;
-  --gold: #d9a21b;
-  --line: #2b2b2b;
-  background: var(--bg);
-  color: var(--text);
+  --navy: #1a1033;
+  --purple: #7c3aed;
+  --cyan: #22d3ee;
+  --yellow: #facc15;
+  --paper: #ffffff;
+  --shadow: 8px 8px 0 var(--navy);
+  background: linear-gradient(135deg, #f7f3ff 0%, #f2f8ff 100%);
+  color: var(--navy);
   min-height: 100vh;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
 }
 .home * { box-sizing: border-box; }
 
 .hero {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 64px 24px;
+  padding: 72px 24px 40px;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 56px;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 48px;
   align-items: center;
 }
 
+.tags { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+.tag {
+  display: inline-block;
+  padding: 10px 16px;
+  border: 3px solid var(--navy);
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tag-purple { background: var(--purple); color: #fff; }
+.tag-yellow { background: var(--yellow); color: var(--navy); }
+
 .hero-text h1 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 4.2vw, 3.4rem);
-  line-height: 1.12;
-  letter-spacing: -0.01em;
-  margin: 0 0 40px;
+  font-size: clamp(2.4rem, 5.6vw, 4.6rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  margin: 0 0 28px;
+}
+.lede {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  max-width: 60ch;
+  margin: 0;
 }
 
-.flow h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--muted);
-  margin: 0 0 16px;
+/* dark vault card */
+.vault {
+  background: var(--navy);
+  color: #fff;
+  padding: 32px 28px;
+  box-shadow: 8px 8px 0 var(--purple);
+  border: 3px solid var(--navy);
 }
+.vault-kicker {
+  margin: 0;
+  color: var(--yellow);
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.vault-amount {
+  margin: 8px 0 4px;
+  font-size: clamp(3rem, 6vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.vault-note { margin: 0 0 24px; font-size: 0.95rem; opacity: 0.8; }
+.vault ul { list-style: none; margin: 0; padding: 0; border-top: 2px solid rgba(255,255,255,0.25); }
+.vault li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 2px solid rgba(255,255,255,0.25);
+  font-size: 0.95rem;
+}
+.vault li span { opacity: 0.75; }
+.vault li strong { color: var(--cyan); }
+
+/* steps */
+.flow {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 24px 96px;
+}
+.flow h2 {
+  font-size: clamp(1.8rem, 3.6vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0 0 12px;
+}
+.flow-sub { margin: 0 0 36px; font-size: 1.05rem; line-height: 1.6; max-width: 62ch; }
+
 .flow ol {
   list-style: none;
   margin: 0;
   padding: 0;
-  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
 }
-.flow li {
+.card {
+  border: 3px solid var(--navy);
+  box-shadow: var(--shadow);
+  padding: 24px 22px 28px;
   display: flex;
-  gap: 16px;
-  padding-bottom: 22px;
-  position: relative;
+  flex-direction: column;
+  gap: 12px;
 }
-.flow li:last-child { padding-bottom: 0; }
-/* connecting line between steps */
-.flow li:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: 21px;
-  top: 44px;
-  bottom: 0;
-  width: 2px;
-  background: var(--line);
-}
+.card-purple { background: var(--purple); color: #fff; }
+.card-cyan   { background: var(--cyan);   color: var(--navy); }
+.card-white  { background: var(--paper);  color: var(--navy); }
+.card-yellow { background: var(--yellow); color: var(--navy); }
+
+.card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .badge {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--line);
+  background: var(--navy);
+  color: #fff;
+  border: 3px solid var(--navy);
 }
-.flow li:last-child .badge { background: var(--gold); color: #000; border-color: var(--gold); }
-.flow h3 { margin: 2px 0 2px; font-size: 1.02rem; }
-.flow p { margin: 0; color: var(--muted); font-size: 0.94rem; line-height: 1.45; max-width: 44ch; }
-
-.hero-image img {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 600px;
-  object-fit: cover;
-  border-radius: 32px; /* curved edges */
-  border: 1px solid var(--line);
-  box-shadow: 0 24px 60px -24px rgba(255, 255, 255, 0.12);
+.step-num {
+  background: var(--navy);
+  color: #fff;
+  padding: 6px 10px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
+.card h3 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+.card p { margin: 0; font-size: 0.98rem; line-height: 1.55; }
 
+@media (max-width: 1000px) {
+  .flow ol { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: 40px; padding: 40px 20px; }
-  .hero-image { order: -1; }
-  .hero-image img { max-height: 340px; }
+  .hero { grid-template-columns: 1fr; gap: 40px; padding: 48px 20px 24px; }
+  .flow { padding: 24px 20px 72px; }
+}
+@media (max-width: 600px) {
+  .flow ol { grid-template-columns: 1fr; }
 }
 `;

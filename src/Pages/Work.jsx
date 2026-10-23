@@ -46,10 +46,41 @@ function WorkInner() {
 
   const act = (label, fn) => run(label, fn, reload);
 
+  const rules = [
+    {
+      color: "purple",
+      title: "Your stake backs your word",
+      text: `Clients see that you have skin in the game. A larger stake unlocks bigger project types. Yours is currently ${eth(staked)}.`,
+    },
+    {
+      color: "cyan",
+      title: "Pay is locked before you start",
+      text: "By the time you are selected, the client’s money is already inside the contract. You never begin work on a promise alone.",
+    },
+    {
+      color: "white",
+      title: "Revisions have a limit",
+      text: limits?.maxRejects
+        ? `A client can reject a submission up to ${limits.maxRejects} times. After that, the dispute rules take over instead of endless rework.`
+        : "A client can only reject a submission a set number of times, so revisions never turn into endless rework.",
+    },
+    {
+      color: "yellow",
+      title: "Silence works in your favour",
+      text: "If the client does not review your work before the deadline, you can claim payment yourself. No chasing and no waiting on a reply.",
+    },
+  ];
+
   return (
     <main className="page work">
-      <h1>Work</h1>
-      <p className="lede">Apply to projects that match your stake, deliver, and get paid from escrow.</p>
+      <div className="work-head">
+        <span className="tag tag-purple">Freelancer side</span>
+        <h1>Work</h1>
+        <p className="lede">
+          Apply to projects that match your stake, deliver the work, and get paid straight from escrow. Every step
+          is enforced by the contract, so you always know where the money is.
+        </p>
+      </div>
 
       <section className="card stake-strip">
         <div>
@@ -138,6 +169,31 @@ function WorkInner() {
           </div>
         </>
       )}
+
+      <section className="rules" aria-labelledby="rules-title">
+        <h2 id="rules-title">How the contract protects you</h2>
+        <p className="rules-sub">
+          Before you apply, here is what the rules guarantee. These limits are written into the smart contract,
+          so neither side can change them halfway through a project.
+        </p>
+
+        <ul className="rules-grid">
+          {rules.map((r) => (
+            <li key={r.title} className={`rule rule-${r.color}`}>
+              <h3>{r.title}</h3>
+              <p>{r.text}</p>
+            </li>
+          ))}
+        </ul>
+
+        <div className="rules-cta">
+          <div>
+            <h3>Want to take on bigger projects?</h3>
+            <p>Increase your stake to unlock higher-value project types and stand out to clients.</p>
+          </div>
+          <Link className="btn btn-primary" to="/profile">Increase your stake</Link>
+        </div>
+      </section>
     </main>
   );
 }

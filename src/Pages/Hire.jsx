@@ -78,7 +78,7 @@ function HireInner() {
           const updated = { ...descriptions, [newest.id]: pending };
           setDescriptions(updated);
           localStorage.setItem("hire_project_descriptions", JSON.stringify(updated));
-          
+
           // Sync to shared backend
           fetch("https://api.yourdomain.com/project-descriptions", {
             method: "POST",
@@ -113,51 +113,93 @@ function HireInner() {
   const act = (label, fn) => run(label, fn, reload);
   const now = Date.now();
 
+  const protections = [
+    {
+      color: "purple",
+      title: "Your money stays locked",
+      text: "The payment sits in the contract from the moment you post. It only leaves when you approve the work, or when the rules say it should.",
+    },
+    {
+      color: "cyan",
+      title: "You choose who builds it",
+      text: limits?.maxApplicants
+        ? `Up to ${limits.maxApplicants} freelancers can apply to each project. Review them and select the one you trust.`
+        : "Freelancers apply to your project and you select the one you trust. Nobody is assigned without your say.",
+    },
+    {
+      color: "white",
+      title: "You can ask for changes",
+      text: limits?.maxRejects
+        ? `If the work is not right, reject it. You can do this up to ${limits.maxRejects} times before the dispute rules apply.`
+        : "If the work is not right, reject it and the freelancer can resubmit, within the limits set by the contract.",
+    },
+    {
+      color: "yellow",
+      title: "Missed deadlines are covered",
+      text: "If the freelancer misses the deadline, you can claim the project back. Review submissions on time, though: unanswered work auto-approves.",
+    },
+  ];
+
   return (
     <main className="page hire">
-      <h1>Hire</h1>
-      <p className="lede">Post a project, lock the payment in escrow, and choose who builds it.</p>
+      <div className="hire-head">
+        <span className="tag tag-yellow">Client side</span>
+        <h1>Hire</h1>
+        <p className="lede">
+          Post a project, lock the payment in escrow, and choose who builds it. The freelancer is paid only when
+          you approve the work, so you never pay for something you have not received.
+        </p>
+      </div>
 
-      <section className="card">
+      <section className="card new-project">
         <h2>New project</h2>
-        <form className="form-grid" onSubmit={create}>
-          <label>
-            Project type
-            <select value={type} onChange={(e) => setType(Number(e.target.value))}>
-              {PROJECT_TYPES.map((t, i) => <option key={t} value={i}>{t}</option>)}
-            </select>
-          </label>
-          <label>
-            Payment (ETH)
-            <input type="number" min="0" step="any" placeholder="0.05" value={amount}
-              onChange={(e) => setAmount(e.target.value)} />
-          </label>
-          <label style={{ gridColumn: "1 / -1" }}>
-            Task description
-            <textarea
-              placeholder="Describe the requirements, deliverables, and tasks..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", borderRadius: "4px", border: "1px solid var(--border, #ccc)", background: "var(--bg-input, #fff)", color: "inherit", resize: "vertical" }}
-            />
-          </label>
-          <label>
-            Deadline
-            <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-          </label>
-          <div className="form-foot">
-            <p className="hint">
+        <form className="project-form" onSubmit={create}>
+          <div className="form-grid">
+            <label>
+              Project type
+              <select value={type} onChange={(e) => setType(Number(e.target.value))}>
+                {PROJECT_TYPES.map((t, i) => <option key={t} value={i}>{t}</option>)}
+              </select>
+            </label>
+            <label>
+              Payment (ETH)
+              <input type="number" min="0" step="any" placeholder="0.05" value={amount}
+                onChange={(e) => setAmount(e.target.value)} />
+            </label>
+            <label className="field-wide">
+              Task description
+              <textarea
+                placeholder="Describe the requirements, deliverables, and tasks..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+              />
+            </label>
+            <label>
+              Deadline
+              <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            </label>
+          </div>
+
+          <aside className="receipt" aria-live="polite">
+            <p className="receipt-kicker">Escrow receipt</p>
+            <p className="receipt-amount">{deposit !== null ? eth(deposit) : "—"}</p>
+            <p className="receipt-note">
               {deposit !== null
                 ? <>You will lock <strong>{eth(deposit)}</strong> now.</>
                 : "Enter a payment to see the deposit."}
             </p>
+            <ul>
+              <li><span>Type</span><strong>{PROJECT_TYPES[type]}</strong></li>
+              <li><span>Payment</span><strong>{amount ? `${amount} ETH` : "—"}</strong></li>
+              <li><span>Deadline</span><strong>{deadline ? new Date(deadline).toLocaleString() : "—"}</strong></li>
+            </ul>
             <button className="btn btn-primary" disabled={busy || !valid}>Create project</button>
-          </div>
+          </aside>
         </form>
       </section>
 
-      <section>
+      <section className="projects">
         <div className="section-head">
           <h2>Your projects</h2>
           <button className="btn" onClick={reload} disabled={loading}>{loading ? "Loading…" : "Refresh"}</button>
@@ -169,9 +211,9 @@ function HireInner() {
           {mine.map((p) => (
             <ProjectCard key={p.id} p={p} maxRejects={limits?.maxRejects}>
               {descriptions[p.id] && (
-                <div className="task-description" style={{ marginBottom: "1rem", padding: "0.75rem", background: "var(--bg-card-sub, rgba(0,0,0,0.03))", borderRadius: "6px" }}>
+                <div className="task-description">
                   <strong>Task Description:</strong>
-                  <p style={{ marginTop: "0.25rem", whiteSpace: "pre-wrap", margin: 0 }}>{descriptions[p.id]}</p>
+                  <p>{descriptions[p.id]}</p>
                 </div>
               )}
 
@@ -223,6 +265,32 @@ function HireInner() {
               )}
             </ProjectCard>
           ))}
+        </div>
+      </section>
+
+      <section className="protect" aria-labelledby="protect-title">
+        <h2 id="protect-title">How the contract protects you</h2>
+        <p className="protect-sub">
+          Hiring a stranger should not feel like a gamble. These guarantees are written into the smart contract
+          and apply to every project you post.
+        </p>
+
+        <ul className="protect-grid">
+          {protections.map((r) => (
+            <li key={r.title} className={`rule rule-${r.color}`}>
+              <h3>{r.title}</h3>
+              <p>{r.text}</p>
+            </li>
+          ))}
+        </ul>
+
+        <div className="tips">
+          <h3>Write a brief freelancers can say yes to</h3>
+          <ul>
+            <li>List the exact deliverables, so approval is a simple yes or no.</li>
+            <li>Set a realistic deadline. Rushed projects attract fewer, weaker applicants.</li>
+            <li>Check your projects regularly, because unanswered submissions auto-approve.</li>
+          </ul>
         </div>
       </section>
     </main>
