@@ -27,19 +27,17 @@ function HireInner() {
   const [deposit, setDeposit] = useState(null);
   const [descriptions, setDescriptions] = useState({});
 
-  // Fetch descriptions from a shared off-chain store (e.g., Supabase or shared API)
+  // Fetch descriptions from shared off-chain store / localStorage
   useEffect(() => {
     let off = false;
     async function fetchDescriptions() {
       try {
-        // Replace this endpoint with your shared backend/Supabase URL
         const res = await fetch("https://api.yourdomain.com/project-descriptions");
         if (res.ok) {
           const data = await res.json();
           if (!off) setDescriptions(data);
         }
       } catch {
-        // Fallback to localStorage if shared backend is not yet configured
         try {
           const local = JSON.parse(localStorage.getItem("hire_project_descriptions") || "{}");
           if (!off) setDescriptions(local);
@@ -66,7 +64,7 @@ function HireInner() {
     return () => { off = true; };
   }, [amount, contract]);
 
-  // Link pending description to newly created project upon reload and sync to shared store
+  // Link pending description to newly created project upon reload and sync
   useEffect(() => {
     if (!projects.length || !account) return;
     const pending = localStorage.getItem("pending_project_description");
@@ -79,7 +77,6 @@ function HireInner() {
           setDescriptions(updated);
           localStorage.setItem("hire_project_descriptions", JSON.stringify(updated));
 
-          // Sync to shared backend
           fetch("https://api.yourdomain.com/project-descriptions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -253,6 +250,22 @@ function HireInner() {
                   <p className="hint">
                     Work submitted. It auto-approves in {fmtDuration(p.countdown ?? 0)} if you don’t respond.
                   </p>
+                  {(() => {
+                    try {
+                      const links = JSON.parse(localStorage.getItem("project_submission_links") || "{}");
+                      const link = links[p.id];
+                      return link ? (
+                        <div style={{ margin: "0.5rem 0", padding: "0.5rem", background: "rgba(0,0,0,0.03)", borderRadius: "4px" }}>
+                          <strong>Submission Link:</strong>{" "}
+                          <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary, #0070f3)", wordBreak: "break-all" }}>
+                            {link}
+                          </a>
+                        </div>
+                      ) : null;
+                    } catch {
+                      return null;
+                    }
+                  })()}
                   <button className="btn btn-primary" disabled={busy}
                     onClick={() => act("Approve work", () => contract.approveWork(p.id))}>
                     Approve and pay

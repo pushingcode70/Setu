@@ -21,12 +21,35 @@ function WorkInner() {
   const { projects, limits, loading, reload } = useProjects();
   const [tab, setTab] = useState("browse");
   const [staked, setStaked] = useState(0n);
-  const [eligible, setEligible] = useState([]); // meetsStakeRequirement per project type
-  const [applied, setApplied] = useState({}); // projectId -> bool
+  const [eligible, setEligible] = useState([]);
+  const [applied, setApplied] = useState({});
+  const [descriptions, setDescriptions] = useState({});
+  const [submissionLinks, setSubmissionLinks] = useState({});
 
   const open = projects.filter((p) => p.status === STATUS.OPEN && !same(p.client, account));
   const mine = projects.filter((p) => same(p.freelancer, account));
   const activeCount = mine.filter((p) => p.status === STATUS.IN_PROGRESS || p.status === STATUS.SUBMITTED).length;
+
+  // Fetch task descriptions
+  useEffect(() => {
+    let off = false;
+    async function fetchDescriptions() {
+      try {
+        const res = await fetch("https://api.yourdomain.com/project-descriptions");
+        if (res.ok) {
+          const data = await res.json();
+          if (!off) setDescriptions(data);
+        }
+      } catch {
+        try {
+          const local = JSON.parse(localStorage.getItem("hire_project_descriptions") || "{}");
+          if (!off) setDescriptions(local);
+        } catch {}
+      }
+    }
+    fetchDescriptions();
+    return () => { off = true; };
+  }, [projects]);
 
   useEffect(() => {
     (async () => {
@@ -45,6 +68,22 @@ function WorkInner() {
   }, [projects]);
 
   const act = (label, fn) => run(label, fn, reload);
+
+  const handleLinkChange = (projectId, val) => {
+    setSubmissionLinks((prev) => ({ ...prev, [projectId]: val }));
+  };
+
+  const handleWorkSubmit = (pId) => {
+    const link = submissionLinks[pId] || "";
+    if (link.trim()) {
+      try {
+        const existing = JSON.parse(localStorage.getItem("project_submission_links") || "{}");
+        existing[pId] = link.trim();
+        localStorage.setItem("project_submission_links", JSON.stringify(existing));
+      } catch {}
+    }
+    act("Submit work", () => contract.submitWork(pId));
+  };
 
   const rules = [
     {
@@ -125,6 +164,12 @@ function WorkInner() {
                 : null;
               return (
                 <ProjectCard key={p.id} p={p}>
+                  {descriptions[p.id] && (
+                    <div className="task-description">
+                      <strong>Task Description:</strong>
+                      <p>{descriptions[p.id]}</p>
+                    </div>
+                  )}
                   <p className="hint">
                     {p.applicants.length}{limits ? ` of ${limits.maxApplicants}` : ""} applicants
                   </p>
@@ -145,12 +190,32 @@ function WorkInner() {
           <div className="grid">
             {mine.map((p) => (
               <ProjectCard key={p.id} p={p} maxRejects={limits?.maxRejects}>
-                {p.status === STATUS.IN_PROGRESS && (
-                  <button className="btn btn-primary" disabled={busy}
-                    onClick={() => act("Submit work", () => contract.submitWork(p.id))}>
-                    {p.rejectCount > 0 ? "Resubmit work" : "Submit work"}
-                  </button>
+                {descriptions[p.id] && (
+                  <div className="task-description">
+                    <strong>Task Description:</strong>
+                    <p>{descriptions[p.id]}</p>
+                  </div>
                 )}
+
+                {p.status === STATUS.IN_PROGRESS && (
+                  <div style={{ margin: "0.75rem 0" }}>
+                    <label style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.9rem" }}>
+                      <strong>Submission Link (GitHub, Vercel, Drive, etc.)</strong>
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={submissionLinks[p.id] || ""}
+                      onChange={(e) => handleLinkChange(p.id, e.target.value)}
+                      style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem", borderRadius: "4px", border: "1px solid var(--border, #ccc)" }}
+                    />
+                    <button className="btn btn-primary" disabled={busy || !(submissionLinks[p.id] || "").trim()}
+                      onClick={() => handleWorkSubmit(p.id)}>
+                      {p.rejectCount > 0 ? "Resubmit work" : "Submit work"}
+                    </button>
+                  </div>
+                )}
+
                 {p.status === STATUS.SUBMITTED && (
                   <>
                     <p className="hint">
