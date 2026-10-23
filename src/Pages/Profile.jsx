@@ -1,32 +1,27 @@
-// src/Pages/Work.jsx  (freelancer side: find projects, apply, submit work)
+// src/Pages/Profile.jsx  (manage stake, view eligibility)
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { parseEther } from "ethers";
 import { ConnectGate, useWallet } from "../context/WalletContext";
 import useProjects from "../hooks/useProjects";
-import ProjectCard from "../Components/ProjectCard";
-import { PROJECT_TYPES, STATUS } from "../contract";
-import { eth, fmtDuration, same } from "../utils";
-import "./Work.css";
+import { PROJECT_TYPES } from "../contract";
+import { eth } from "../utils";
+import "./Profile.css";
 
-export default function Work() {
+export default function Profile() {
   return (
     <ConnectGate>
-      <WorkInner />
+      <ProfileInner />
     </ConnectGate>
   );
 }
 
-function WorkInner() {
+function ProfileInner() {
   const { account, contract, run, busy } = useWallet();
-  const { projects, limits, loading, reload } = useProjects();
-  const [tab, setTab] = useState("browse");
+  const { limits } = useProjects();
   const [staked, setStaked] = useState(0n);
-  const [eligible, setEligible] = useState([]); // meetsStakeRequirement per project type
-  const [applied, setApplied] = useState({}); // projectId -> bool
-
-  const open = projects.filter((p) => p.status === STATUS.OPEN && !same(p.client, account));
-  const mine = projects.filter((p) => same(p.freelancer, account));
-  const activeCount = mine.filter((p) => p.status === STATUS.IN_PROGRESS || p.status === STATUS.SUBMITTED).length;
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [eligible, setEligible] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -34,110 +29,104 @@ function WorkInner() {
       setStaked(prof.stakedAmount);
       setEligible(await Promise.all(PROJECT_TYPES.map((_, i) => contract.meetsStakeRequirement(account, i))));
     })().catch(() => {});
-  }, [contract, account, projects]);
+  }, [contract, account]);
 
-  useEffect(() => {
-    (async () => {
-      const entries = await Promise.all(open.map(async (p) => [p.id, await contract.hasApplied(p.id, account)]));
-      setApplied(Object.fromEntries(entries));
-    })().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects]);
+  const deposit = (e) => {
+    e.preventDefault();
+    run(
+      "Deposit stake",
+      () => contract.depositStake({ value: parseEther(depositAmount) }),
+      () => { setDepositAmount(""); }
+    );
+  };
 
-  const act = (label, fn) => run(label, fn, reload);
+  const withdraw = (e) => {
+    e.preventDefault();
+    run(
+      "Withdraw stake",
+      () => contract.withdrawStake(parseEther(withdrawAmount)),
+      () => { setWithdrawAmount(""); }
+    );
+  };
+
+  const medium = limits?.mediumStake ?? 0n;
+  const large = limits?.largeStake ?? 0n;
+  const percent = medium > 0n ? Math.min(100, Number((staked * 100n) / medium)) : 0;
 
   return (
-    <main className="page work">
-      <h1>Work</h1>
-      <p className="lede">Apply to projects that match your stake, deliver, and get paid from escrow.</p>
+    <main className="page profile">
+      <h1>Profile</h1>
+      <p className="lede">Manage your stake to unlock project types and build trust.</p>
 
-      <section className="card stake-strip">
-        <div>
-          <span className="label">Your stake</span>
-          <strong>{eth(staked)}</strong>
+      <section className="card">
+        <h2>Your stake</h2>
+        <div className="stats">
+          <p className="stat">
+            <span className="label">Staked</span>
+            <strong>{eth(staked)}</strong>
+          </p>
+          <p className="stat">
+            <span className="label">Medium threshold</span>
+            <strong>{eth(medium)}</strong>
+          </p>
+          <p className="stat">
+            <span className="label">Large threshold</span>
+            <strong>{eth(large)}</strong>
+          </p>
         </div>
-        <div>
-          <span className="label">Active projects</span>
-          <strong>{activeCount}{limits ? ` of ${limits.maxActive}` : ""}</strong>
+
+        <div className="meter">
+          <div className="meter-fill" style={{ width: `${percent}%` }} />
+          <div className="meter-mark" style={{ left: `${Math.min(100, Number((medium * 100n) / (medium || 1n)))}%` }} />
+          <div className="meter-mark" style={{ left: `${Math.min(100, Number((large * 100n) / (large || 1n)))}%` }} />
         </div>
-        <div>
-          <span className="label">You can take</span>
-          <strong>
-            {PROJECT_TYPES.filter((_, i) => eligible[i]).join(", ") || "Nothing yet"}
-          </strong>
+        <div className="meter-legend">
+          <span>0</span>
+          <span>Medium ({eth(medium)})</span>
+          <span>Large ({eth(large)})</span>
         </div>
-        <Link className="btn" to="/profile">Manage stake</Link>
+
+        <h3>Eligible for</h3>
+        <ul className="tier-list">
+          {PROJECT_TYPES.map((t, i) => (
+            <li key={t} className={eligible[i] ? "ok" : "locked"}>
+              {eligible[i] ? "✓" : "🔒"} {t}
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === "browse"} onClick={() => setTab("browse")}>
-          Open projects ({open.length})
-        </button>
-        <button role="tab" aria-selected={tab === "mine"} onClick={() => setTab("mine")}>
-          My work ({mine.length})
-        </button>
-        <button className="btn btn-small tabs-refresh" onClick={reload} disabled={loading}>
-          {loading ? "Loading…" : "Refresh"}
-        </button>
-      </div>
+      <section className="card">
+        <h2>Manage stake</h2>
+        <div className="stake-forms">
+          <form onSubmit={deposit}>
+            <label>
+              Deposit (ETH)
+              <input type="number" min="0" step="any" placeholder="0.1" value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)} />
+            </label>
+            <button className="btn btn-primary" disabled={busy || !depositAmount}>
+              Deposit
+            </button>
+          </form>
 
-      {tab === "browse" && (
-        <>
-          {!loading && open.length === 0 && <p className="empty">No open projects right now. Check back soon.</p>}
-          <div className="grid">
-            {open.map((p) => {
-              const full = limits && p.applicants.length >= limits.maxApplicants;
-              const lacksStake = eligible.length > 0 && !eligible[p.type];
-              const reason = applied[p.id] ? "Applied"
-                : lacksStake ? `Needs more stake for ${PROJECT_TYPES[p.type]}`
-                : full ? "Applicant limit reached"
-                : null;
-              return (
-                <ProjectCard key={p.id} p={p}>
-                  <p className="hint">
-                    {p.applicants.length}{limits ? ` of ${limits.maxApplicants}` : ""} applicants
-                  </p>
-                  <button className="btn btn-primary" disabled={busy || !!reason}
-                    onClick={() => act("Apply", () => contract.applyForProject(p.id))}>
-                    {reason ?? "Apply"}
-                  </button>
-                </ProjectCard>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {tab === "mine" && (
-        <>
-          {!loading && mine.length === 0 && <p className="empty">You haven’t been selected for a project yet. Apply to one from the open list.</p>}
-          <div className="grid">
-            {mine.map((p) => (
-              <ProjectCard key={p.id} p={p} maxRejects={limits?.maxRejects}>
-                {p.status === STATUS.IN_PROGRESS && (
-                  <button className="btn btn-primary" disabled={busy}
-                    onClick={() => act("Submit work", () => contract.submitWork(p.id))}>
-                    {p.rejectCount > 0 ? "Resubmit work" : "Submit work"}
-                  </button>
-                )}
-                {p.status === STATUS.SUBMITTED && (
-                  <>
-                    <p className="hint">
-                      {p.countdown > 0
-                        ? `Waiting for the client. You can claim payment in ${fmtDuration(p.countdown)}.`
-                        : "The client didn’t respond in time. You can claim payment."}
-                    </p>
-                    <button className="btn btn-primary" disabled={busy || p.countdown > 0}
-                      onClick={() => act("Claim auto-approval", () => contract.claimAutoApproval(p.id))}>
-                      Claim payment
-                    </button>
-                  </>
-                )}
-              </ProjectCard>
-            ))}
-          </div>
-        </>
-      )}
+          <form onSubmit={withdraw}>
+            <label>
+              Withdraw (ETH)
+              <input type="number" min="0" step="any" placeholder="0.1" value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)} />
+            </label>
+            <div className="row">
+              <button className="btn btn-small" type="button" onClick={() => setWithdrawAmount(eth(staked).replace(" ETH", ""))}>
+                Max
+              </button>
+              <button className="btn btn-danger" disabled={busy || !withdrawAmount || parseEther(withdrawAmount) > staked}>
+                Withdraw
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
     </main>
   );
 }

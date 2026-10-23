@@ -1,32 +1,20 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./Components/Navbar"
-import Hire from "./Pages/Hire"
-import Profile from "./Pages/Profile"
-import Work from "./Pages/Work"
-import Home from "./Pages/Home"
-import './App.css'
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./Components/Navbar";
+import Home from "./Pages/Home";
+import Hire from "./Pages/Hire";
+import Work from "./Pages/Work";
+import Profile from "./Pages/Profile";   // ← add
 
-
-function App() {
-  
-
+export default function App() {
   return (
     <>
-      <Router>
-      <Navbar name="Setu" />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/work" element={<Work />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/hire" element={<Hire />} />
-          
-        </Routes>
-      </main>
-    </Router>
-
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/hire" element={<Hire />} />
+        <Route path="/work" element={<Work />} />
+        <Route path="/profile" element={<Profile />} />   {/* ← add */}
+      </Routes>
     </>
-  )
+  );
 }
-
-export default App
