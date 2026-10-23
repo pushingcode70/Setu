@@ -23,7 +23,32 @@ function HireInner() {
   const [type, setType] = useState(0);
   const [amount, setAmount] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [description, setDescription] = useState("");
   const [deposit, setDeposit] = useState(null);
+  const [descriptions, setDescriptions] = useState({});
+
+  // Fetch descriptions from a shared off-chain store (e.g., Supabase or shared API)
+  useEffect(() => {
+    let off = false;
+    async function fetchDescriptions() {
+      try {
+        // Replace this endpoint with your shared backend/Supabase URL
+        const res = await fetch("https://api.yourdomain.com/project-descriptions");
+        if (res.ok) {
+          const data = await res.json();
+          if (!off) setDescriptions(data);
+        }
+      } catch {
+        // Fallback to localStorage if shared backend is not yet configured
+        try {
+          const local = JSON.parse(localStorage.getItem("hire_project_descriptions") || "{}");
+          if (!off) setDescriptions(local);
+        } catch {}
+      }
+    }
+    fetchDescriptions();
+    return () => { off = true; };
+  }, [projects]);
 
   // live preview of the deposit the contract will ask for
   useEffect(() => {
@@ -41,6 +66,32 @@ function HireInner() {
     return () => { off = true; };
   }, [amount, contract]);
 
+  // Link pending description to newly created project upon reload and sync to shared store
+  useEffect(() => {
+    if (!projects.length || !account) return;
+    const pending = localStorage.getItem("pending_project_description");
+    if (pending) {
+      const myProjects = projects.filter((p) => same(p.client, account));
+      if (myProjects.length > 0) {
+        const newest = [...myProjects].sort((a, b) => Number(b.id - a.id))[0];
+        if (newest && !descriptions[newest.id]) {
+          const updated = { ...descriptions, [newest.id]: pending };
+          setDescriptions(updated);
+          localStorage.setItem("hire_project_descriptions", JSON.stringify(updated));
+          
+          // Sync to shared backend
+          fetch("https://api.yourdomain.com/project-descriptions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectId: String(newest.id), description: pending })
+          }).catch(() => {});
+
+          localStorage.removeItem("pending_project_description");
+        }
+      }
+    }
+  }, [projects, account, descriptions]);
+
   const deadlineTs = deadline ? Math.floor(new Date(deadline).getTime() / 1000) : 0;
   const valid = deposit !== null && deadlineTs * 1000 > Date.now();
 
@@ -48,10 +99,13 @@ function HireInner() {
     e.preventDefault();
     const now = Math.floor(Date.now() / 1000);
     const dl = DEADLINE_MODE === "duration" ? deadlineTs - now : deadlineTs;
+    if (description.trim()) {
+      localStorage.setItem("pending_project_description", description.trim());
+    }
     run(
       "Create project",
       () => contract.createProject(type, parseEther(amount), dl, { value: deposit }),
-      () => { setAmount(""); setDeadline(""); return reload(); }
+      () => { setAmount(""); setDeadline(""); setDescription(""); return reload(); }
     );
   };
 
@@ -77,6 +131,16 @@ function HireInner() {
             Payment (ETH)
             <input type="number" min="0" step="any" placeholder="0.05" value={amount}
               onChange={(e) => setAmount(e.target.value)} />
+          </label>
+          <label style={{ gridColumn: "1 / -1" }}>
+            Task description
+            <textarea
+              placeholder="Describe the requirements, deliverables, and tasks..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem", borderRadius: "4px", border: "1px solid var(--border, #ccc)", background: "var(--bg-input, #fff)", color: "inherit", resize: "vertical" }}
+            />
           </label>
           <label>
             Deadline
@@ -104,6 +168,13 @@ function HireInner() {
         <div className="grid">
           {mine.map((p) => (
             <ProjectCard key={p.id} p={p} maxRejects={limits?.maxRejects}>
+              {descriptions[p.id] && (
+                <div className="task-description" style={{ marginBottom: "1rem", padding: "0.75rem", background: "var(--bg-card-sub, rgba(0,0,0,0.03))", borderRadius: "6px" }}>
+                  <strong>Task Description:</strong>
+                  <p style={{ marginTop: "0.25rem", whiteSpace: "pre-wrap", margin: 0 }}>{descriptions[p.id]}</p>
+                </div>
+              )}
+
               {p.status === STATUS.OPEN && (
                 <>
                   <div className="applicants">
