@@ -1,0 +1,12 @@
+/* src/Pages/Work.css */
+.stake-strip { display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; }
+.stake-strip strong { font-size: 1.1rem; }
+.stake-strip .btn { margin-left: auto; }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--s-line); margin-bottom: 1.25rem; align-items: center; }
+.tabs [role="tab"] {
+  font: inherit; font-weight: 600; background: none; border: 0; padding: 0.7rem 1rem; cursor: pointer;
+  color: var(--s-muted); border-bottom: 3px solid transparent; margin-bottom: -1px;
+}
+.tabs [role="tab"][aria-selected="true"] { color: var(--s-ink); border-bottom-color: var(--s-accent); }
+.tabs-refresh { margin-left: auto; }

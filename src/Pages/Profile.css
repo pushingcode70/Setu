@@ -1,0 +1,19 @@
+/* src/Pages/Profile.css */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat { margin: 0; }
+.stat strong { font-size: 2rem; font-weight: 800; }
+
+.meter { position: relative; height: 12px; background: #e6ebf2; border-radius: 999px; margin-top: 1.25rem; overflow: hidden; }
+.meter-fill { height: 100%; background: var(--s-accent); border-radius: 999px; transition: width 0.4s; }
+.meter-mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--s-ink); }
+.meter-legend { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--s-muted); margin-top: 0.5rem; }
+
+.tier-list { list-style: none; display: flex; gap: 0.5rem; padding: 0; margin: 1rem 0; flex-wrap: wrap; }
+.tier-list li { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+.tier-list .ok { background: #dff3e8; color: var(--s-ok); }
+.tier-list .locked { background: #e6ebf2; color: var(--s-muted); }
+
+.stake-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+.stake-forms form { display: flex; flex-direction: column; gap: 0.75rem; }
+.stake-forms .row { display: flex; gap: 0.5rem; }
+.stake-forms .row .btn:last-child { flex: 1; }
